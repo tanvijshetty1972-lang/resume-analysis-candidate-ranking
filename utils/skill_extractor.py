@@ -1,14 +1,10 @@
+import re
 from utils.skills import SKILL_SET
 
-def extract_skills(text: str):
-    """
-    Extract skills from resume text based on predefined SKILL_SET
-    """
+def extract_skills(text):
     text = text.lower()
-    found_skills = []
-
+    skills_found = []
     for skill in SKILL_SET:
-        if skill.lower() in text:
-            found_skills.append(skill)
-
-    return list(set(found_skills))
+        if re.search(rf"\b{re.escape(skill)}\b", text):
+            skills_found.append(skill)
+    return sorted(list(set(skills_found)))

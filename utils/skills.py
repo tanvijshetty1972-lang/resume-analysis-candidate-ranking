@@ -1,16 +1,15 @@
-# utils/skills.py
-
+# Master skill set for universal matching
 SKILL_SET = [
-    "Python", "Java", "C++", "R", "SQL", "Excel", "Power BI", "Pandas",
-    "NumPy", "TensorFlow", "PyTorch", "Scikit-learn", "NLP", "Deep Learning",
-    "Communication", "Git", "Cloud"
+    "python","java","c++","c","javascript","react","reactjs","react native",
+    "spring boot","nodejs","html","css","flask","django","pandas","numpy",
+    "tensorflow","pytorch","aws","azure","gcp","docker","kubernetes","git",
+    "mysql","mongodb","firebase","power bi","tableau","ci/cd","jest","junit"
 ]
 
-# Categorized skills for charts
+# Optional categories
 SKILL_CATEGORIES = {
-    "Programming": ["Python", "Java", "C++", "R"],
-    "Data Analysis": ["SQL", "Excel", "Power BI", "Pandas", "NumPy"],
-    "Machine Learning": ["TensorFlow", "PyTorch", "Scikit-learn", "Deep Learning"],
-    "NLP / AI": ["NLP"],
-    "Other": ["Communication", "Git", "Cloud"]
+    "Programming": ["python","java","c++","c","javascript"],
+    "Frameworks": ["react","reactjs","react native","spring boot","nodejs","flask","django"],
+    "Cloud": ["aws","azure","gcp","docker","kubernetes"],
+    "Data": ["pandas","numpy","tensorflow","pytorch","mysql","mongodb","firebase","power bi","tableau"]
 }

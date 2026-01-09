@@ -1,158 +1,205 @@
-# dashboard/dashboard.py
 import streamlit as st
 import os
-import sys
-from fpdf import FPDF
+import re
 import plotly.graph_objects as go
-import pandas as pd
+import sys
 
-# =========================================================
-# Add PROJECT ROOT to Python path
-# =========================================================
+# ====== Add utils folder to path ======
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-# =========================================================
-# Import utils
-# =========================================================
-from utils.resume_parser import extract_text_from_pdf
+# ====== IMPORT UTILS ======
+from utils.resume_parser import extract_text
 from utils.skill_extractor import extract_skills
-from utils.recommendations import generate_recommendations
-from utils.matcher import match_resume_to_job
-from utils.skills import SKILL_SET, SKILL_CATEGORIES
+from utils.experience_extractor import extract_years_of_experience, extract_required_experience
+from utils.projects_extractor import extract_projects
+from utils.extra_curricular_extractor import extract_extra_curricular
+from utils.ai_matcher import semantic_similarity
+from utils.skills import SKILL_SET
 
-# =========================================================
-# Streamlit config
-# =========================================================
+# ====== DEFAULT CERTIFICATIONS ======
+DEFAULT_CERTIFICATIONS = [
+    "AWS", "Azure", "Google Cloud", "PMP", "Scrum", "ITIL", "Six Sigma",
+    "Tableau", "Power BI", "Cisco", "CompTIA", "CISSP", "TensorFlow", "PyTorch"
+]
+
+# ====== STREAMLIT CONFIG ======
 st.set_page_config(
-    page_title="Intelligent Resume Analyzer",
-    page_icon="📄",
+    page_title="AI Resume Screening & Candidate Ranking",
+    page_icon="🤖",
     layout="centered"
 )
 
-st.title("📄 Intelligent Resume Analyzer")
+st.title("🤖 AI Resume Screening & Candidate Ranking System")
 st.write(
-    "Upload your resume to extract skills, get improvement suggestions, "
-    "and check how well it matches a job description."
+    "An AI-driven system that evaluates resumes for **skills, experience, certifications, projects, and extra-curriculars**, "
+    "with visual dashboards and improvement suggestions."
 )
 
-# =========================================================
-# STEP 1: Resume Upload
-# =========================================================
-uploaded_file = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
+# ====== STEP 1: UPLOAD RESUME ======
+uploaded_resume = st.file_uploader("📄 Upload Resume (PDF/DOCX)", type=["pdf", "docx"])
 resume_text = ""
-extracted_skills = []
+resume_skills = []
+resume_experience = 0
+resume_certs = []
+resume_projects = []
+resume_extracurriculars = []
 
-if uploaded_file:
-    st.success("✅ Resume uploaded successfully!")
-    resume_text = extract_text_from_pdf(uploaded_file)
+if uploaded_resume:
+    st.success("✅ Resume uploaded successfully")
+    resume_text = extract_text(uploaded_resume)
 
-    with st.expander("🧪 Debug: Extracted Resume Text"):
-        st.text(resume_text[:1500])
+    # Extract skills
+    resume_skills = extract_skills(resume_text)
 
-    extracted_skills = extract_skills(resume_text)
+    # Extract experience
+    resume_experience = extract_years_of_experience(resume_text)
 
-    st.subheader("🔍 Extracted Skills")
-    if extracted_skills:
-        st.write(extracted_skills)
-    else:
-        st.warning("⚠️ No recognizable skills found in the resume.")
+    # Extract certifications
+    resume_certs = [cert for cert in DEFAULT_CERTIFICATIONS if re.search(rf"\b{cert}\b", resume_text, re.IGNORECASE)]
 
-    st.subheader("💡 Resume Improvement Suggestions")
-    recommendations = generate_recommendations(extracted_skills)
-    if recommendations:
-        for rec in recommendations:
-            st.write("•", rec)
-    else:
-        st.success("🎉 Great job! Your resume already covers key skills.")
+    # Extract projects/internships
+    resume_projects = extract_projects(resume_text)
 
-# =========================================================
-# STEP 2: Job Description Matching
-# =========================================================
+    # Extract extra-curriculars
+    resume_extracurriculars = extract_extra_curricular(resume_text)
+
+    st.subheader("🔍 Resume Insights")
+    st.write("**Skills Extracted:**", resume_skills if resume_skills else "None detected")
+    st.write("**Estimated Experience:**", f"{resume_experience} years")
+    st.write("**Certifications:**", resume_certs if resume_certs else "None detected")
+    st.write("**Projects / Internships:**", resume_projects if resume_projects else "None detected")
+    st.write("**Extra-curricular / Achievements:**", resume_extracurriculars if resume_extracurriculars else "None detected")
+
+# ====== STEP 2: UPLOAD JOB DESCRIPTION ======
 st.divider()
-st.subheader("📌 Job Description Matching")
-job_file = st.file_uploader("Upload Job Description (TXT only)", type=["txt"])
-job_text = ""
+st.subheader("📌 Job Description Analysis")
 
-if job_file and extracted_skills:
-    job_text = job_file.read().decode("utf-8").lower()
-    st.success("✅ Job description uploaded successfully!")
+uploaded_jd = st.file_uploader("📝 Upload Job Description (TXT/DOCX)", type=["txt","docx"])
+jd_text = ""
+jd_skills = []
+required_experience = 0
 
-    match_score, matched_skills, missing_skills = match_resume_to_job(
-        extracted_skills, job_text
+if uploaded_jd:
+    jd_text = extract_text(uploaded_jd)
+    jd_skills = extract_skills(jd_text)
+    required_experience = extract_required_experience(jd_text)
+
+    st.subheader("📋 Job Requirements")
+    st.write("**Required Skills:**", jd_skills if jd_skills else "None detected")
+    st.write("**Required Experience:**", f"{required_experience}+ years")
+
+# ====== STEP 3: AI SCREENING & SCORING ======
+if resume_skills and jd_skills:
+
+    # Skills match
+    matched_skills = sorted(set(resume_skills) & set(jd_skills))
+    missing_skills = sorted(set(jd_skills) - set(resume_skills))
+    skill_match_score = round((len(matched_skills) / len(jd_skills)) * 100, 2)
+
+    # Semantic similarity
+    semantic_score = semantic_similarity(resume_text, jd_text)
+
+    # Experience score
+    experience_score = 100 if resume_experience >= required_experience else max(0, (resume_experience / required_experience) * 100)
+
+    # Certification score
+    cert_score = round((len(resume_certs) / len(DEFAULT_CERTIFICATIONS)) * 100, 2) if DEFAULT_CERTIFICATIONS else 0
+
+    # Project score (max 5 projects)
+    project_score = round(min(len(resume_projects), 5) / 5 * 100, 2)
+
+    # Extra-curricular score (max 5)
+    extra_score = round(min(len(resume_extracurriculars), 5) / 5 * 100, 2)
+
+    # Weighted final AI score
+    final_ai_score = round(
+        0.35*skill_match_score +
+        0.25*semantic_score +
+        0.20*experience_score +
+        0.10*cert_score +
+        0.05*project_score +
+        0.05*extra_score,
+        2
     )
 
-    st.subheader("📊 Job Match Analysis")
-    st.metric("🎯 Resume Match Score", f"{match_score}%")
+    # ====== DASHBOARD METRICS ======
+    st.divider()
+    st.subheader("📊 AI Screening Scores")
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1.metric("🧩 Skills Match", f"{skill_match_score}%")
+    col2.metric("🧠 Semantic Match", f"{semantic_score}%")
+    col3.metric("🧑‍💼 Experience", f"{experience_score}%")
+    col4.metric("📜 Certifications", f"{cert_score}%")
+    col5.metric("📝 Projects", f"{project_score}%")
+    col6.metric("🏆 Extra-curricular", f"{extra_score}%")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("✅ Matched Skills")
-        st.write(matched_skills if matched_skills else "None")
-    with col2:
-        st.subheader("❌ Missing Skills")
-        st.write(missing_skills if missing_skills else "None")
+    # ====== GAUGE CHART ======
+    st.subheader("🎯 Overall Candidate Match Score")
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=final_ai_score,
+        number={'suffix': "%"},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': "#1F618D"},
+            'steps': [
+                {'range': [0, 40], 'color': "#F1948A"},
+                {'range': [40, 70], 'color': "#F7DC6F"},
+                {'range': [70, 100], 'color': "#82E0AA"},
+            ],
+        }
+    ))
+    st.plotly_chart(fig_gauge, use_container_width=True)
 
-    # =========================================================
-    # STEP 3: Skill Match Bar Chart
-    # =========================================================
-    st.subheader("📊 Skill Coverage Chart")
-    skill_categories = SKILL_CATEGORIES.keys()
-    matched_count = []
-    missing_count = []
+    # ====== SKILL GAP ANALYSIS ======
+    st.subheader("📉 Skill Gap Analysis")
+    fig_gap = go.Figure()
+    fig_gap.add_bar(
+        y=["Matched Skills", "Missing Skills"],
+        x=[len(matched_skills), len(missing_skills)],
+        orientation="h",
+        marker=dict(color=["#2ECC71", "#E74C3C"])
+    )
+    fig_gap.update_layout(xaxis_title="Number of Skills", height=300)
+    st.plotly_chart(fig_gap, use_container_width=True)
 
-    for cat, skills in SKILL_CATEGORIES.items():
-        matched = len(set([s.lower() for s in skills]) & set([m.lower() for m in matched_skills]))
-        missing = len(set([s.lower() for s in skills]) & set([m.lower() for m in missing_skills]))
-        matched_count.append(matched)
-        missing_count.append(missing)
+    # ====== SKILL COVERAGE PIE ======
+    st.subheader("📊 Skill Coverage Distribution")
+    fig_pie = go.Figure(
+        data=[go.Pie(
+            labels=["Matched Skills", "Missing Skills"],
+            values=[len(matched_skills), len(missing_skills)],
+            hole=0.55,
+            marker=dict(colors=["#2ECC71", "#E74C3C"]),
+            textinfo="label+percent"
+        )]
+    )
+    st.plotly_chart(fig_pie, use_container_width=True)
 
-    fig = go.Figure(data=[
-        go.Bar(name='Matched', x=list(skill_categories), y=matched_count, marker_color='green'),
-        go.Bar(name='Missing', x=list(skill_categories), y=missing_count, marker_color='red')
-    ])
-    fig.update_layout(barmode='group', title='Skill Match by Category')
-    st.plotly_chart(fig, width="stretch")
+    # ====== AI RECOMMENDATIONS ======
+    st.subheader("💡 AI Resume Improvement Suggestions")
+    if missing_skills:
+        for skill in missing_skills:
+            st.write(f"➕ Gain experience or certification in **{skill}**")
+    if resume_experience < required_experience:
+        st.warning(f"📌 Candidate lacks {required_experience - resume_experience} years of required experience")
+    if not resume_certs:
+        st.info("📌 Add relevant certifications to strengthen your resume")
+    if not resume_projects:
+        st.info("📌 Include projects or internships to showcase practical experience")
+    if not resume_extracurriculars:
+        st.info("📌 Add extra-curricular activities / achievements to highlight versatility")
 
-    # =========================================================
-    # STEP 4: Resume Coverage Pie Chart
-    # =========================================================
-    st.subheader("📊 Overall Resume Coverage")
-    total_skills = len(matched_skills) + len(missing_skills)
-    coverage = [len(matched_skills), len(missing_skills)]
-    labels = ['Matched Skills', 'Missing Skills']
-
-    fig2 = go.Figure(data=[go.Pie(labels=labels, values=coverage, hole=0.3)])
-    st.plotly_chart(fig2, width="stretch")
-
-    # =========================================================
-    # STEP 5: Downloadable PDF Report
-    # =========================================================
-    st.subheader("📄 Download Analysis Report")
-    if st.button("Generate PDF Report"):
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(0, 10, "Resume Analysis Report", ln=True, align='C')
-        pdf.ln(10)
-
-        pdf.set_font("Arial", '', 12)
-        pdf.cell(0, 8, f"Resume Skills: {', '.join(extracted_skills)}", ln=True)
-        pdf.cell(0, 8, f"Improvement Suggestions: {', '.join(recommendations)}", ln=True)
-        pdf.cell(0, 8, f"Job Match Score: {match_score}%", ln=True)
-        pdf.cell(0, 8, f"Matched Skills: {', '.join(matched_skills)}", ln=True)
-        pdf.cell(0, 8, f"Missing Skills: {', '.join(missing_skills)}", ln=True)
-
-        report_path = "resume_analysis_report.pdf"
-        pdf.output(report_path)
-        with open(report_path, "rb") as f:
-            st.download_button(
-                label="📥 Download PDF",
-                data=f,
-                file_name="resume_analysis_report.pdf",
-                mime="application/pdf"
-            )
+    # ====== FINAL VERDICT ======
+    st.subheader("🧾 Final Screening Verdict")
+    if final_ai_score >= 75:
+        st.success("✅ Strong Match – Candidate can be shortlisted.")
+    elif final_ai_score >= 50:
+        st.warning("🟡 Partial Match – Consider after upskilling.")
+    else:
+        st.error("❌ Not suitable for this role.")
 
 st.markdown("---")
-st.markdown("🚀 *Built with Python, NLP & Streamlit*")
+st.markdown("🚀 *Enterprise-Style AI Resume Screening System • Skills • Semantic • Experience • Certifications • Projects • Extra-curricular*")
