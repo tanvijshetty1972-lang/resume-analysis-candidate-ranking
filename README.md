@@ -1,7 +1,3 @@
-# **AI Resume Screening & Candidate Ranking System**
-
-![AI Resume Screening](https://img.shields.io/badge/AI-Resume%20Screening-blue) ![Python](https://img.shields.io/badge/Python-3.12-green) ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-orange)
-
 **Automated Resume Analysis, Scoring, and Candidate Ranking using AI & NLP**
 
 ---
@@ -176,3 +172,4 @@ This project is licensed under the **MIT License** – see the [LICENSE](LICENSE
 2. `python-docx` documentation: [https://python-docx.readthedocs.io](https://python-docx.readthedocs.io)
 3. Sentence-Transformers: [https://www.sbert.net/](https://www.sbert.net/)
 4. Streamlit: [https://docs.streamlit.io/](https://docs.streamlit.io/)
+
