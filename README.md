@@ -125,10 +125,11 @@ pip install -r requirements.txt
 
 ## Contributors
 
-* **Tanvi J Shetty** – Developer & Project Lead
+* **Tanvi J Shetty** – Developer
 
 ## License
 
 This project is licensed under the MIT License – see the LICENSE file for details.
+
 
 
