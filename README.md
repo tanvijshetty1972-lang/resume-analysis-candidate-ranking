@@ -131,12 +131,4 @@ pip install -r requirements.txt
 
 This project is licensed under the MIT License – see the LICENSE file for details.
 
-## References
 
-* pdfplumber documentation: [https://github.com/jsvine/pdfplumber](https://github.com/jsvine/pdfplumber)
-* python-docx documentation: [https://python-docx.readthedocs.io](https://python-docx.readthedocs.io)
-* Sentence-Transformers: [https://www.sbert.net/](https://www.sbert.net/)
-* Streamlit: [https://docs.streamlit.io/](https://docs.streamlit.io/)
-
-Do you want me to do that next?
-```
